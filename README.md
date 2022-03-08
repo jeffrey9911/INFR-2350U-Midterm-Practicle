@@ -1,6 +1,6 @@
 # INFR2350U Midterm Practicle part
 
-## Members
+## Members - Midterm group #18
 
 Jake Calvert - Art work, Model creation
 
