@@ -141,18 +141,16 @@ void DefaultSceneLayer::_CreateScene()
 
 
 		// Load in the meshes
-		MeshResource::Sptr characterMesh = ResourceManager::CreateAsset<MeshResource>("Racoon.obj");
+		MeshResource::Sptr characterMesh = ResourceManager::CreateAsset<MeshResource>("RacoonTest.obj");
 
-		MeshResource::Sptr goalMesh = ResourceManager::CreateAsset<MeshResource>("wall.obj");
+		MeshResource::Sptr goalMesh = ResourceManager::CreateAsset<MeshResource>("Coin.obj");
 		MeshResource::Sptr carMesh = ResourceManager::CreateAsset<MeshResource>("Car.obj");
 
 		// Load in some textures
-		Texture2D::Sptr    boxTexture   = ResourceManager::CreateAsset<Texture2D>("textures/box-diffuse.png");
-		Texture2D::Sptr    boxSpec      = ResourceManager::CreateAsset<Texture2D>("textures/box-specular.png");
-
 		Texture2D::Sptr		characterTex = ResourceManager::CreateAsset<Texture2D>("textures/RacoonUV.png");
 		Texture2D::Sptr		yellowCarTex = ResourceManager::CreateAsset<Texture2D>("textures/YellowStripeUV.png");
 		Texture2D::Sptr		terrianTex = ResourceManager::CreateAsset<Texture2D>("textures/GroundTex.png");
+		Texture2D::Sptr		goalTex = ResourceManager::CreateAsset<Texture2D>("textures/CoinUV.png");
 
 #pragma region Basic Texture Creation
 		Texture2DDescription singlePixelDescriptor;
@@ -176,10 +174,6 @@ void DefaultSceneLayer::_CreateScene()
 		solidWhiteTex->LoadData(1, 1, PixelFormat::RGB, PixelType::Float, solidWhite);
 
 #pragma endregion 
-
-		// Loading in a 1D LUT
-		Texture1D::Sptr toonLut = ResourceManager::CreateAsset<Texture1D>("luts/toon-1D.png"); 
-		toonLut->SetWrap(WrapMode::ClampToEdge);
 
 		// Here we'll load in the cubemap, as well as a special shader to handle drawing the skybox
 		TextureCube::Sptr testCubemap = ResourceManager::CreateAsset<TextureCube>("cubemaps/ocean/ocean.jpg");
@@ -233,7 +227,7 @@ void DefaultSceneLayer::_CreateScene()
 		Material::Sptr goalTextureMat = ResourceManager::CreateAsset<Material>(deferredForward);
 		{
 			goalTextureMat->Name = "wallMaterial";
-			goalTextureMat->Set("u_Material.AlbedoMap", solidWhiteTex);
+			goalTextureMat->Set("u_Material.AlbedoMap", goalTex);
 			goalTextureMat->Set("u_Material.NormalMap", normalMapDefault);
 			goalTextureMat->Set("u_Material.Shininess", 1.0f);
 		}
@@ -288,8 +282,10 @@ void DefaultSceneLayer::_CreateScene()
 		{
 			// Make a big tiled mesh
 			MeshResource::Sptr tiledMesh = ResourceManager::CreateAsset<MeshResource>();
-			tiledMesh->AddParam(MeshBuilderParam::CreatePlane(ZERO, UNIT_Z, UNIT_X, glm::vec2(100.0f), glm::vec2(20.0f)));
+			tiledMesh->AddParam(MeshBuilderParam::CreatePlane(ZERO, UNIT_Z, UNIT_X, glm::vec2(1.0f), glm::vec2(1.0f)));
 			tiledMesh->GenerateMesh();
+
+			plane->SetScale(glm::vec3(100.0f, 100.0f, 1.0f));
 
 			// Create and attach a RenderComponent to the object to draw our mesh
 			RenderComponent::Sptr renderer = plane->Add<RenderComponent>();
@@ -304,7 +300,7 @@ void DefaultSceneLayer::_CreateScene()
 
 		GameObject::Sptr mainChara = scene->CreateGameObject("PACMAN");
 		{
-			mainChara->SetPostion(glm::vec3(0.0f, 0.0f, 3.0f));
+			mainChara->SetPostion(glm::vec3(0.0f, 0.0f, 0.0f));
 			mainChara->SetRotation(glm::vec3(90.0f, 0.0f, 0.0f));
 
 			mainChara->Add<JumpBehaviour>();
@@ -320,12 +316,13 @@ void DefaultSceneLayer::_CreateScene()
 			scene->MainCamera->GetGameObject()->Get<SimpleCameraFollow>()->setFollowObj(mainChara);
 
 			
-
+			
 			RigidBody::Sptr physics = mainChara->Add<RigidBody>(RigidBodyType::Dynamic);
 			ICollider::Sptr collider = physics->AddCollider(SphereCollider::Create());
-			collider->SetPosition(glm::vec3(0.0f, 2.0f, 0.0f));
-			collider->SetScale(glm::vec3(0.5f, 0.5f, 0.5f));
+			//collider->SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+			//collider->SetScale(glm::vec3(0.5f, 0.5f, 0.5f));
 			physics->AddComponent<TriggerVolume>();
+
 
 
 			scene->FindObjectByName("DynamicLight")->Get<SimpleLightFollow>()->setFollowObj(mainChara);
@@ -357,8 +354,8 @@ void DefaultSceneLayer::_CreateScene()
 
 		GameObject::Sptr goal = scene->CreateGameObject("Point For GOAL");
 		{
-			goal->SetPostion(glm::vec3(-15.0f, -15.0f, 0.0f));
-			goal->SetScale(glm::vec3(3.0f, 3.0f, 3.0f));
+			goal->SetPostion(glm::vec3(-15.0f, -15.0f, 3.0f));
+			goal->SetScale(glm::vec3(1.0f, 1.0f, 1.0f));
 
 			RenderComponent::Sptr renderer = goal->Add<RenderComponent>();
 			renderer->SetMesh(goalMesh);
@@ -366,7 +363,7 @@ void DefaultSceneLayer::_CreateScene()
 
 			TriggerVolume::Sptr volume = goal->Add<TriggerVolume>();
 			volume->AddCollider(ConvexMeshCollider::Create());
-			volume->AddComponent<GoalBehaviour>();
+			volume->AddComponent<GoalBehaviour>(); 
 		}
 
 #pragma region EXAMPLES
@@ -583,12 +580,6 @@ void DefaultSceneLayer::_CreateScene()
 */
 #pragma endregion
 
-
-
-		
-
-
-		
 
 		GuiBatcher::SetDefaultTexture(ResourceManager::CreateAsset<Texture2D>("textures/ui-sprite.png"));
 		GuiBatcher::SetDefaultBorderRadius(8);
