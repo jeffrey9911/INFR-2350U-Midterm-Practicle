@@ -53,6 +53,8 @@
 #include "Gameplay/Components/SimpleCameraFollow.h"
 #include "Gameplay/Components/KillBehaviour.h"
 #include "Gameplay/Components/GoalBehaviour.h"
+#include "Gameplay/Components/SimpleLightFollow.h"
+#include "Gameplay/Components/SimpleToggle.h"
 
 // Physics
 #include "Gameplay/Physics/RigidBody.h"
@@ -137,19 +139,20 @@ void DefaultSceneLayer::_CreateScene()
 		celShader->SetDebugName("Cel Shader");
 
 
+
 		// Load in the meshes
-		MeshResource::Sptr monkeyMesh = ResourceManager::CreateAsset<MeshResource>("Monkey.obj");
-		MeshResource::Sptr pacmanMesh = ResourceManager::CreateAsset<MeshResource>("pacman.obj");
-		MeshResource::Sptr wallMesh = ResourceManager::CreateAsset<MeshResource>("wall.obj");
+		MeshResource::Sptr characterMesh = ResourceManager::CreateAsset<MeshResource>("Racoon.obj");
+
+		MeshResource::Sptr goalMesh = ResourceManager::CreateAsset<MeshResource>("wall.obj");
+		MeshResource::Sptr carMesh = ResourceManager::CreateAsset<MeshResource>("Car.obj");
 
 		// Load in some textures
 		Texture2D::Sptr    boxTexture   = ResourceManager::CreateAsset<Texture2D>("textures/box-diffuse.png");
 		Texture2D::Sptr    boxSpec      = ResourceManager::CreateAsset<Texture2D>("textures/box-specular.png");
-		Texture2D::Sptr    monkeyTex    = ResourceManager::CreateAsset<Texture2D>("textures/monkey-uvMap.png");
-		Texture2D::Sptr    leafTex      = ResourceManager::CreateAsset<Texture2D>("textures/leaves.png");
-		Texture2D::Sptr		pacmanTex = ResourceManager::CreateAsset<Texture2D>("textures/pacman.png");
-		leafTex->SetMinFilter(MinFilter::Nearest);
-		leafTex->SetMagFilter(MagFilter::Nearest);
+
+		Texture2D::Sptr		characterTex = ResourceManager::CreateAsset<Texture2D>("textures/RacoonUV.png");
+		Texture2D::Sptr		yellowCarTex = ResourceManager::CreateAsset<Texture2D>("textures/YellowStripeUV.png");
+		Texture2D::Sptr		terrianTex = ResourceManager::CreateAsset<Texture2D>("textures/GroundTex.png");
 
 #pragma region Basic Texture Creation
 		Texture2DDescription singlePixelDescriptor;
@@ -202,113 +205,29 @@ void DefaultSceneLayer::_CreateScene()
 
 		// Create our materials
 		// This will be our box material, with no environment reflections
-		Material::Sptr boxMaterial = ResourceManager::CreateAsset<Material>(deferredForward);
+		Material::Sptr terrianMaterial = ResourceManager::CreateAsset<Material>(deferredForward);
 		{
-			boxMaterial->Name = "Box";
-			boxMaterial->Set("u_Material.AlbedoMap", boxTexture);
-			boxMaterial->Set("u_Material.Shininess", 0.1f);
-			boxMaterial->Set("u_Material.NormalMap", normalMapDefault);
-		}
-
-		// This will be the reflective material, we'll make the whole thing 90% reflective
-		Material::Sptr monkeyMaterial = ResourceManager::CreateAsset<Material>(deferredForward);
-		{
-			monkeyMaterial->Name = "Monkey";
-			monkeyMaterial->Set("u_Material.AlbedoMap", monkeyTex);
-			monkeyMaterial->Set("u_Material.NormalMap", normalMapDefault);
-			monkeyMaterial->Set("u_Material.Shininess", 0.5f);
-		}
-
-		// This will be the reflective material, we'll make the whole thing 50% reflective
-		Material::Sptr testMaterial = ResourceManager::CreateAsset<Material>(deferredForward); 
-		{
-			testMaterial->Name = "Box-Specular";
-			testMaterial->Set("u_Material.AlbedoMap", boxTexture); 
-			testMaterial->Set("u_Material.Specular", boxSpec);
-			testMaterial->Set("u_Material.NormalMap", normalMapDefault);
-		}
-
-		// Our foliage vertex shader material 
-		Material::Sptr foliageMaterial = ResourceManager::CreateAsset<Material>(foliageShader);
-		{
-			foliageMaterial->Name = "Foliage Shader";
-			foliageMaterial->Set("u_Material.AlbedoMap", leafTex);
-			foliageMaterial->Set("u_Material.Shininess", 0.1f);
-			foliageMaterial->Set("u_Material.DiscardThreshold", 0.1f);
-			foliageMaterial->Set("u_Material.NormalMap", normalMapDefault);
-
-			foliageMaterial->Set("u_WindDirection", glm::vec3(1.0f, 1.0f, 0.0f));
-			foliageMaterial->Set("u_WindStrength", 0.5f);
-			foliageMaterial->Set("u_VerticalScale", 1.0f);
-			foliageMaterial->Set("u_WindSpeed", 1.0f);
-		}
-
-		// Our toon shader material
-		Material::Sptr toonMaterial = ResourceManager::CreateAsset<Material>(celShader);
-		{
-			toonMaterial->Name = "Toon"; 
-			toonMaterial->Set("u_Material.AlbedoMap", boxTexture);
-			toonMaterial->Set("u_Material.NormalMap", normalMapDefault);
-			toonMaterial->Set("s_ToonTerm", toonLut);
-			toonMaterial->Set("u_Material.Shininess", 0.1f); 
-			toonMaterial->Set("u_Material.Steps", 8);
+			terrianMaterial->Name = "terrianMaterial";
+			terrianMaterial->Set("u_Material.AlbedoMap", terrianTex);
+			terrianMaterial->Set("u_Material.Shininess", 0.8f);
+			terrianMaterial->Set("u_Material.NormalMap", normalMapDefault);
 		}
 
 
-		Material::Sptr displacementTest = ResourceManager::CreateAsset<Material>(displacementShader);
+		Material::Sptr characterTextureMat = ResourceManager::CreateAsset<Material>(deferredForward);
 		{
-			Texture2D::Sptr displacementMap = ResourceManager::CreateAsset<Texture2D>("textures/displacement_map.png");
-			Texture2D::Sptr normalMap       = ResourceManager::CreateAsset<Texture2D>("textures/normal_map.png");
-			Texture2D::Sptr diffuseMap      = ResourceManager::CreateAsset<Texture2D>("textures/bricks_diffuse.png");
-
-			displacementTest->Name = "Displacement Map";
-			displacementTest->Set("u_Material.AlbedoMap", diffuseMap);
-			displacementTest->Set("u_Material.NormalMap", normalMap);
-			displacementTest->Set("s_Heightmap", displacementMap);
-			displacementTest->Set("u_Material.Shininess", 0.5f);
-			displacementTest->Set("u_Scale", 0.1f);
+			characterTextureMat->Name = "characterTextureMat";
+			characterTextureMat->Set("u_Material.AlbedoMap", characterTex);
+			characterTextureMat->Set("u_Material.NormalMap", normalMapDefault);
+			characterTextureMat->Set("u_Material.Shininess", 1.0f);
 		}
 
-		Material::Sptr normalmapMat = ResourceManager::CreateAsset<Material>(deferredForward);
+		Material::Sptr carTextureMat = ResourceManager::CreateAsset<Material>(deferredForward);
 		{
-			Texture2D::Sptr normalMap       = ResourceManager::CreateAsset<Texture2D>("textures/normal_map.png");
-			Texture2D::Sptr diffuseMap      = ResourceManager::CreateAsset<Texture2D>("textures/bricks_diffuse.png");
-
-			normalmapMat->Name = "Tangent Space Normal Map";
-			normalmapMat->Set("u_Material.AlbedoMap", diffuseMap);
-			normalmapMat->Set("u_Material.NormalMap", normalMap);
-			normalmapMat->Set("u_Material.Shininess", 0.5f);
-			normalmapMat->Set("u_Scale", 0.1f);
-		}
-
-		Material::Sptr multiTextureMat = ResourceManager::CreateAsset<Material>(multiTextureShader);
-		{
-			Texture2D::Sptr sand  = ResourceManager::CreateAsset<Texture2D>("textures/terrain/sand.png");
-			Texture2D::Sptr grass = ResourceManager::CreateAsset<Texture2D>("textures/terrain/grass.png");
-
-			multiTextureMat->Name = "Multitexturing";
-			multiTextureMat->Set("u_Material.DiffuseA", sand);
-			multiTextureMat->Set("u_Material.DiffuseB", grass);
-			multiTextureMat->Set("u_Material.NormalMapA", normalMapDefault);
-			multiTextureMat->Set("u_Material.NormalMapB", normalMapDefault);
-			multiTextureMat->Set("u_Material.Shininess", 0.5f);
-			multiTextureMat->Set("u_Scale", 0.1f); 
-		}
-
-		Material::Sptr pacmanTextureMat = ResourceManager::CreateAsset<Material>(deferredForward);
-		{
-			pacmanTextureMat->Name = "pacmanMaterial";
-			pacmanTextureMat->Set("u_Material.AlbedoMap", pacmanTex);
-			pacmanTextureMat->Set("u_Material.NormalMap", normalMapDefault);
-			pacmanTextureMat->Set("u_Material.Shininess", 0.5f);
-		}
-
-		Material::Sptr wallTextureMat = ResourceManager::CreateAsset<Material>(deferredForward);
-		{
-			wallTextureMat->Name = "wallMaterial";
-			wallTextureMat->Set("u_Material.AlbedoMap", solidBlackTex);
-			wallTextureMat->Set("u_Material.NormalMap", normalMapDefault);
-			wallTextureMat->Set("u_Material.Shininess", 0.2f);
+			carTextureMat->Name = "CAR Material";
+			carTextureMat->Set("u_Material.AlbedoMap", yellowCarTex);
+			carTextureMat->Set("u_Material.NormalMap", normalMapDefault);
+			carTextureMat->Set("u_Material.Shininess", 1.0f);
 		}
 
 		Material::Sptr goalTextureMat = ResourceManager::CreateAsset<Material>(deferredForward);
@@ -319,28 +238,35 @@ void DefaultSceneLayer::_CreateScene()
 			goalTextureMat->Set("u_Material.Shininess", 1.0f);
 		}
 
-		// Create some lights for our scene
-		GameObject::Sptr lightParent = scene->CreateGameObject("Lights");
+		GameObject::Sptr dynamicLight = scene->CreateGameObject("DynamicLight");
+		{
+			Light::Sptr light = dynamicLight->Add<Light>();
+			light->SetColor(glm::vec3(1.0f, 0.3f, 0.5f));
+			light->SetRadius(10.0f);
+			light->SetIntensity(-5.0f);
 
-		for (int ix = 0; ix < 50; ix++) {
-			GameObject::Sptr light = scene->CreateGameObject("Light");
-			light->SetPostion(glm::vec3(glm::diskRand(25.0f), 1.0f));
-			lightParent->AddChild(light);
+			dynamicLight->Add<SimpleLightFollow>();
 
-			Light::Sptr lightComponent = light->Add<Light>();
-			lightComponent->SetColor(glm::linearRand(glm::vec3(0.0f), glm::vec3(1.0f)));
-			lightComponent->SetRadius(glm::linearRand(0.1f, 10.0f));
-			lightComponent->SetIntensity(glm::linearRand(1.0f, 2.0f));
+			dynamicLight->Add<SimpleToggle>();
 		}
+
+		GameObject::Sptr ambientLight = scene->CreateGameObject("ambientLight");
+		{
+			ambientLight->SetPostion(glm::vec3(0.0f, 0.0f, 15.0f));
+			Light::Sptr light = ambientLight->Add<Light>();
+			light->SetColor(glm::vec3(1.0f, 0.7f, 0.5f));
+			light->SetRadius(1000.0f);
+			light->SetIntensity(2.0f);
+
+			ambientLight->Add<SimpleToggle>();
+		}
+
+		
 
 		// We'll create a mesh that is a simple plane that we can resize later
 		MeshResource::Sptr planeMesh = ResourceManager::CreateAsset<MeshResource>();
 		planeMesh->AddParam(MeshBuilderParam::CreatePlane(ZERO, UNIT_Z, UNIT_X, glm::vec2(1.0f)));
 		planeMesh->GenerateMesh();
-
-		MeshResource::Sptr sphere = ResourceManager::CreateAsset<MeshResource>();
-		sphere->AddParam(MeshBuilderParam::CreateIcoSphere(ZERO, ONE, 5));
-		sphere->GenerateMesh();
 
 		// Set up the scene's camera
 		GameObject::Sptr camera = scene->MainCamera->GetGameObject()->SelfRef();
@@ -368,7 +294,7 @@ void DefaultSceneLayer::_CreateScene()
 			// Create and attach a RenderComponent to the object to draw our mesh
 			RenderComponent::Sptr renderer = plane->Add<RenderComponent>();
 			renderer->SetMesh(tiledMesh);
-			renderer->SetMaterial(boxMaterial);
+			renderer->SetMaterial(terrianMaterial);
 
 			// Attach a plane collider that extends infinitely along the X/Y axis
 			RigidBody::Sptr physics = plane->Add<RigidBody>(/*static by default*/);
@@ -376,77 +302,71 @@ void DefaultSceneLayer::_CreateScene()
 			
 		}
 
-		GameObject::Sptr pacman = scene->CreateGameObject("PACMAN");
+		GameObject::Sptr mainChara = scene->CreateGameObject("PACMAN");
 		{
-			pacman->SetPostion(glm::vec3(0.0f, 0.0f, 3.0f));
+			mainChara->SetPostion(glm::vec3(0.0f, 0.0f, 3.0f));
+			mainChara->SetRotation(glm::vec3(90.0f, 0.0f, 0.0f));
 
-			pacman->Add<JumpBehaviour>();
+			mainChara->Add<JumpBehaviour>();
 
-			RenderComponent::Sptr renderer = pacman->Add<RenderComponent>();
-			renderer->SetMesh(pacmanMesh);
-			renderer->SetMaterial(pacmanTextureMat);
+			RenderComponent::Sptr renderer = mainChara->Add<RenderComponent>();
+			renderer->SetMesh(characterMesh);
+			renderer->SetMaterial(characterTextureMat);
+			
 
-			SimpleObjectControl::Sptr objControl = pacman->Add<SimpleObjectControl>();
+			SimpleObjectControl::Sptr objControl = mainChara->Add<SimpleObjectControl>();
 			objControl->setCamera(camera);
 
-			scene->MainCamera->GetGameObject()->Get<SimpleCameraFollow>()->setFollowObj(pacman);
+			scene->MainCamera->GetGameObject()->Get<SimpleCameraFollow>()->setFollowObj(mainChara);
 
 			
 
-			RigidBody::Sptr physics = pacman->Add<RigidBody>(RigidBodyType::Dynamic);
-			physics->AddCollider(ConvexMeshCollider::Create());
+			RigidBody::Sptr physics = mainChara->Add<RigidBody>(RigidBodyType::Dynamic);
+			ICollider::Sptr collider = physics->AddCollider(SphereCollider::Create());
+			collider->SetPosition(glm::vec3(0.0f, 2.0f, 0.0f));
+			collider->SetScale(glm::vec3(0.5f, 0.5f, 0.5f));
 			physics->AddComponent<TriggerVolume>();
+
+
+			scene->FindObjectByName("DynamicLight")->Get<SimpleLightFollow>()->setFollowObj(mainChara);
 
 			//TriggerVolume::Sptr volume = pacman->Add<TriggerVolume>();
 			//volume->AddCollider(ConvexMeshCollider::Create());
 
 		}
 
-		GameObject::Sptr demoBase = scene->CreateGameObject("Demo Parent");
-
-		GameObject::Sptr wall = scene->CreateGameObject("Wall For LOSE");
+		GameObject::Sptr car = scene->CreateGameObject("Car For LOSE");
 		{
-			wall->SetPostion(glm::vec3(15.0f, 15.0f, 0.0f));
-			wall->SetScale(glm::vec3(3.0f, 3.0f, 3.0f));
+			car->SetPostion(glm::vec3(15.0f, 15.0f, 0.0f));
+			car->SetScale(glm::vec3(3.0f, 3.0f, 3.0f));
+			car->SetRotation(glm::vec3(-90.0f, 0.0f, 0.0f));
 
-			RenderComponent::Sptr renderer = wall->Add<RenderComponent>();
-			renderer->SetMesh(wallMesh);
-			renderer->SetMaterial(wallTextureMat);
+			RenderComponent::Sptr renderer = car->Add<RenderComponent>();
+			renderer->SetMesh(carMesh);
+			renderer->SetMaterial(carTextureMat);
 
 			
 			
 
-			TriggerVolume::Sptr volume = wall->Add<TriggerVolume>();
+			TriggerVolume::Sptr volume = car->Add<TriggerVolume>();
 			volume->AddCollider(ConvexMeshCollider::Create());
 			volume->AddComponent<KillBehaviour>();
 
 			volume->AddComponent<RigidBody>(RigidBodyType::Static);
-
-			/*
-			TriggerVolume::Sptr volume = wall->Add<TriggerVolume>();
-			volume->AddCollider(ConvexMeshCollider::Create());
-
-			KillBehaviour::Sptr killer = wall->Add<KillBehaviour>();*/
-			
 		}
 
-		GameObject::Sptr goal = scene->CreateGameObject("Wall For GOAL");
+		GameObject::Sptr goal = scene->CreateGameObject("Point For GOAL");
 		{
 			goal->SetPostion(glm::vec3(-15.0f, -15.0f, 0.0f));
 			goal->SetScale(glm::vec3(3.0f, 3.0f, 3.0f));
 
 			RenderComponent::Sptr renderer = goal->Add<RenderComponent>();
-			renderer->SetMesh(wallMesh);
+			renderer->SetMesh(goalMesh);
 			renderer->SetMaterial(goalTextureMat);
-
-			/*
-			RigidBody::Sptr physics = wall->Add<RigidBody>(RigidBodyType::Static);
-			physics->AddCollider(ConvexMeshCollider::Create()); */
 
 			TriggerVolume::Sptr volume = goal->Add<TriggerVolume>();
 			volume->AddCollider(ConvexMeshCollider::Create());
 			volume->AddComponent<GoalBehaviour>();
-
 		}
 
 #pragma region EXAMPLES
