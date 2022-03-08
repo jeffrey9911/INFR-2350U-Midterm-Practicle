@@ -48,6 +48,8 @@
 #include "Gameplay/Components/SimpleCameraFollow.h"
 #include "Gameplay/Components/KillBehaviour.h"
 #include "Gameplay/Components/GoalBehaviour.h"
+#include "Gameplay/Components/SimpleLightFollow.h"
+#include "Gameplay/Components/SimpleToggle.h"
 
 // GUI
 #include "Gameplay/Components/GUI/RectTransform.h"
@@ -282,6 +284,9 @@ void Application::_RegisterClasses()
 	ComponentManager::RegisterType<SimpleCameraFollow>();
 	ComponentManager::RegisterType<KillBehaviour>();
 	ComponentManager::RegisterType<GoalBehaviour>();
+	ComponentManager::RegisterType<SimpleLightFollow>();
+	ComponentManager::RegisterType<SimpleToggle>();
+
 
 }
 
