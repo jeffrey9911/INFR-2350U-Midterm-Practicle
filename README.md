@@ -1,4 +1,10 @@
-# Welcome to the Ontario Tech Teaching and Education Repository (OTTER) Tookit
+# INFR2350U Midterm Practicle part
 
-## Overview
+## Members
+
+Jake Calvert - Art work, Model creation
+
+Jeffrey Li - Programming
+
+Patrick Thompson - Documentation, Report, Function explanation
 
